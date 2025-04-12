@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 import fs from "node:fs/promises";
 import { Worker } from "worker_threads";
 import { randomUUID } from "crypto";
