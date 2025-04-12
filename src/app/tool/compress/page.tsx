@@ -37,10 +37,13 @@ const Page = () => {
     formData.append("compressionQuality", compressionQuality);
 
     try {
-      const response = await fetch(`/api/compress`, {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/compress`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
