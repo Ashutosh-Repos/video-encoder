@@ -38,7 +38,7 @@ const Page = () => {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/compress`,
+        `api/compress`,
         {
           method: "POST",
           body: formData,
