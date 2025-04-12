@@ -37,6 +37,7 @@ const runFFmpeg = async (inputFilePath, metadata) => {
         });
     }
     catch (error) {
-        worker_threads_1.parentPort?.postMessage({ success: false, error: error.message });
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        worker_threads_1.parentPort?.postMessage({ success: false, error: errorMessage });
     }
 })();

@@ -58,9 +58,10 @@ const watchAndUpload = (uploadDir, cloudFolder) => {
                     });
                 }
                 catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : "Unknown error";
                     worker_threads_1.parentPort?.postMessage({
                         success: false,
-                        error: `Failed to process ${filePath}: ${error.message}`,
+                        error: `Failed to process ${filePath}: ${errorMessage}`,
                     });
                 }
             }
@@ -82,16 +83,19 @@ const watchAndUpload = (uploadDir, cloudFolder) => {
                     resolve(m3u8Url);
                 }
                 catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : "Unknown error";
                     worker_threads_1.parentPort?.postMessage({
                         success: false,
-                        error: `Failed to upload ${filePath}: ${error.message}`,
+                        error: `Failed to upload ${filePath}: ${errorMessage}`,
                     });
                     reject(error);
                 }
             }
         });
         watcher.on("error", (error) => {
-            reject(new Error(`Chokidar watcher error: ${error.message}`));
+            const errorMessage = error instanceof Error ? error.message : "Unknown error";
+            worker_threads_1.parentPort?.postMessage({ success: false, error: errorMessage });
+            reject(new Error(`Chokidar watcher error: ${errorMessage}`));
         });
         watcher.on("ready", () => {
             worker_threads_1.parentPort?.postMessage({
@@ -121,9 +125,7 @@ const watchAndUpload = (uploadDir, cloudFolder) => {
         });
     }
     catch (error) {
-        worker_threads_1.parentPort?.postMessage({
-            success: false,
-            error: `Worker error: ${error.message}`,
-        });
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        worker_threads_1.parentPort?.postMessage({ success: false, error: errorMessage });
     }
 })();

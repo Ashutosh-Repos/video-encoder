@@ -10,38 +10,33 @@ const execAsync = (0, util_1.promisify)(child_process_1.exec);
  * @param metadata - Output metadata including chosen quality.
  */
 const runFFmpeg = async (inputFilePath, metadata) => {
-    let crf;
-    switch (metadata.quality) {
-        case "low":
-            crf = 23;
-            break;
-        case "high":
-            crf = 35;
-            break;
-        case "medium":
-        default:
-            crf = 28;
-            break;
-    }
+    const crfMap = {
+        low: 23,
+        medium: 28,
+        high: 35,
+    };
+    const crf = crfMap[metadata.quality];
     const outputPath = `${metadata.dir}/output.mp4`;
     const ffmpegCommand = `ffmpeg -i "${inputFilePath}" -c:v libx264 -preset veryfast -crf ${crf} -c:a copy "${outputPath}"`;
     console.log("Executing FFmpeg command:");
     console.log(ffmpegCommand);
     await execAsync(ffmpegCommand);
+    return outputPath;
 };
 (async () => {
     try {
-        const { inputFilePath, metadata, } = worker_threads_1.workerData;
+        const { inputFilePath, metadata } = worker_threads_1.workerData;
         console.log("Starting FFmpeg compression with metadata:", metadata);
-        await runFFmpeg(inputFilePath, metadata);
+        const outputPath = await runFFmpeg(inputFilePath, metadata);
         console.log("FFmpeg compression completed successfully.");
         worker_threads_1.parentPort?.postMessage({
             success: true,
             message: "FFmpeg compression completed",
-            src: `${metadata.dir}/output.mp4`,
+            src: outputPath,
         });
     }
     catch (error) {
-        worker_threads_1.parentPort?.postMessage({ success: false, error: error.message });
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        worker_threads_1.parentPort?.postMessage({ success: false, error: errorMessage });
     }
 })();
