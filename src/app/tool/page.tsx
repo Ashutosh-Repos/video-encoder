@@ -1,8 +1,8 @@
 import React from "react";
 import Tools from "@/components/Tools";
 
-const page = () => {
+const Page = () => {
   return <Tools />;
 };
 
-export default page;
+export default Page;

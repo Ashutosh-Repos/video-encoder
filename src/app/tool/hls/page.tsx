@@ -1,7 +1,7 @@
 import React from "react";
 import Uploader from "@/components/Uploader";
-const page = () => {
-  return <Uploader name="Video" type="video/.mkv , video/.mp4" />;
+const Page = () => {
+  return <Uploader />;
 };
 
-export default page;
+export default Page;

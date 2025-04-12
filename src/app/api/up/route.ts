@@ -1,13 +1,14 @@
-import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import { Worker } from "worker_threads";
 import { randomUUID } from "crypto";
 import path from "path";
 import { promisify } from "util";
-import { exec, execSync } from "child_process";
-const cloudinary = require("cloudinary").v2;
+import { exec } from "child_process";
+import { v2 as cloudinary } from "cloudinary";
+import { UploadApiResponse, UploadApiErrorResponse } from "cloudinary";
 
 const execPromise = promisify(exec);
+
 // Allowed video types
 const ALLOWED_VIDEO_TYPES = [
   "video/mp4",
@@ -16,13 +17,29 @@ const ALLOWED_VIDEO_TYPES = [
   "video/avi",
 ];
 
+interface WorkerSuccessMessage {
+  success: true;
+  urls: { type: number; url: string }[];
+  message?: string;
+}
+
+interface WorkerErrorMessage {
+  success: false;
+  error: string;
+}
+
+type WorkerMessage = WorkerSuccessMessage | WorkerErrorMessage;
+
 cloudinary.config({
   cloud_name: process.env.CLOUDNAME,
   api_key: process.env.CLOUDAPIKEY,
   api_secret: process.env.CLOUDSECRET,
 });
 
-const uploadToCloudinary = async (filePath: string, folder: string) => {
+const uploadToCloudinary = async (
+  filePath: string,
+  folder: string
+): Promise<string> => {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.upload(
       filePath,
@@ -33,15 +50,20 @@ const uploadToCloudinary = async (filePath: string, folder: string) => {
         unique_filename: false,
         overwrite: true,
       },
-      (error: any, result: any) => {
+      (
+        error: UploadApiErrorResponse | undefined,
+        result: UploadApiResponse | undefined
+      ) => {
         if (error) {
           reject(
             new Error(
               `Cloudinary upload error for ${filePath}: ${error.message}`
             )
           );
-        } else {
+        } else if (result) {
           resolve(result.url);
+        } else {
+          reject(new Error(`Unknown Cloudinary upload error for ${filePath}`));
         }
       }
     );
@@ -75,8 +97,12 @@ const getVideoResolution = async (
       width: metadata.streams[0].width,
       height: metadata.streams[0].height,
     };
-  } catch (error) {
-    throw new Error("Failed to extract video resolution.");
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Unknown error:Failed to extract video resolution";
+    throw new Error(errorMessage);
   }
 };
 
@@ -85,18 +111,15 @@ const runFFmpegWorker = (
   uploadSubDir: { dir: string; height: number; width: number }[]
 ): Promise<void> => {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(
-      path.resolve("./src/app/api/up/ffmpegWorker.js"),
-      {
-        workerData: { inputFilePath, uploadSubDir },
-      }
-    );
+    const worker = new Worker(path.resolve("worker-dist/hls_worker.js"), {
+      workerData: { inputFilePath, uploadSubDir },
+    });
 
-    worker.on("message", (message) => {
+    worker.on("message", (message: { success: boolean; error?: string }) => {
       if (message.success) {
         resolve();
       } else {
-        reject(new Error(message.error));
+        reject(new Error(message.error || "FFmpeg worker error"));
       }
     });
 
@@ -111,17 +134,17 @@ const runFFmpegWorker = (
 const runUploadWorker = (
   uploadSubDir: { dir: string; height: number; width: number }[],
   folderUUID: string
-): Promise<any> => {
+): Promise<WorkerSuccessMessage["urls"]> => {
   return new Promise((resolve, reject) => {
     const worker = new Worker(
-      path.resolve("./src/app/api/up/uploadWorker.js"),
+      path.resolve("worker-dist/hls_upload_worker.js"),
       {
         workerData: { uploadSubDir, folderUUID },
       }
     );
 
-    worker.on("message", (message) => {
-      if (message.success && message.urls) {
+    worker.on("message", (message: WorkerMessage) => {
+      if (message.success) {
         resolve(message.urls);
       } else if (message.error) {
         reject(new Error(message.error));
@@ -176,7 +199,7 @@ export async function POST(req: Request): Promise<Response> {
 
         sendStatus(evtid.id++, "Checking resolution...");
         const { width, height } = await getVideoResolution(inputFilePath);
-        if (height > width) throw new Error("aspect should be lanscape");
+        if (height > width) throw new Error("Aspect ratio should be landscape");
         if (Math.min(height, width) < 360) {
           throw new Error(`Video resolution too low: ${width}x${height}`);
         }
@@ -255,10 +278,10 @@ export async function POST(req: Request): Promise<Response> {
           ...m3u8Url,
         };
 
-        sendStatus(0, "processing completed", { url: videoUrls });
-      } catch (error: any) {
-        console.error("Error:", error.message);
-        sendStatus(-1, "Error", { error: error.message });
+        sendStatus(0, "Processing completed", { url: videoUrls });
+      } catch (error: unknown) {
+        console.error("Error:", (error as Error).message);
+        sendStatus(-1, "Error", { error: (error as Error).message });
       } finally {
         // Clean up
         if (inputFilePath) {

@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { MiniFileUpload } from "@/components/ui/file-upload";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -14,51 +15,58 @@ import {
 } from "@/components/ui/select";
 
 const Page = () => {
-  // Manage selected file
+  const [submitProgrees, setSubmitProgrees] = useState<boolean>(false);
   const [file, setFile] = useState<File | null>(null);
-  // Manage selected compression quality; default to "medium"
-  const [videoformat, setvideoformat] = useState<string>("mp4");
+  const [videoFormat, setVideoFormat] = useState<string>("mp4");
 
-  const handleFileChange = (file: File) => {
-    setFile(file);
-    console.log("Selected file:", file);
+  const handleFileChange = (selectedFile: File): void => {
+    setFile(selectedFile);
+    console.log("Selected file:", selectedFile);
   };
 
-  const handleUpload = async () => {
+  const handleUpload = async (): Promise<void> => {
+    setSubmitProgrees(true);
     if (!file) {
       toast.warning("Please select or drop a video file");
       return;
     }
+
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("format", videoformat);
+    formData.append("format", videoFormat);
 
     try {
       const response = await fetch("/api/convert", {
         method: "POST",
         body: formData,
       });
-      // If the response is not ok, parse and show error.
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Error:", errorData.error);
         alert(`Error: ${errorData.error}`);
         return;
       }
-      // On success, download the returned blob as output.mp4.
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `output.${videoformat}`;
+      a.download = `output.${videoFormat}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-    } catch (err: any) {
-      toast.warning("Upload failed");
-      console.error("Request failed:", err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.warning("Upload failed");
+        console.error("Request failed:", err.message);
+      } else {
+        console.error("Unexpected error:", err);
+      }
       alert("An unexpected error occurred.");
+    } finally {
+      setSubmitProgrees(false);
     }
   };
 
@@ -70,18 +78,18 @@ const Page = () => {
             Convert video format <br /> Effortlessly
           </h1>
           <p className="text-sm sm:text-lg font-normal text-gray-500 lg:text-xl sm:px-16 xl:px-48 dark:text-gray-400">
-            Upload a video file and choose video format
+            Upload a video file and choose a video format
           </p>
         </div>
       </div>
+
       <div className="w-full h-max p-8 flex items-center justify-center">
         <div className="w-max h-max grid place-items-center gap-4">
           <MiniFileUpload onChange={handleFileChange} />
           <div className="flex gap-4 items-center">
             <Select
-              onValueChange={(value) => {
-                setvideoformat(value);
-              }}
+              onValueChange={(value) => setVideoFormat(value)}
+              defaultValue="mp4"
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Choose format" />
@@ -89,23 +97,40 @@ const Page = () => {
               <SelectContent>
                 <SelectGroup>
                   <SelectLabel>Select video format</SelectLabel>
-                  <SelectItem value="mp4">mp4</SelectItem>
-                  <SelectItem value="mov">mov</SelectItem>
-                  <SelectItem value="avi">avi</SelectItem>
-                  <SelectItem value="mkv">mkv</SelectItem>
-                  <SelectItem value="webm">webm</SelectItem>
-                  <SelectItem value="flv">flv</SelectItem>
-                  <SelectItem value="wmv">wmv</SelectItem>
-                  <SelectItem value="mpeg">mpeg</SelectItem>
-                  <SelectItem value="3gp">3gp</SelectItem>
-                  <SelectItem value="ogv">ogv</SelectItem>
-                  <SelectItem value="m4v">m4v</SelectItem>
+                  {[
+                    "mp4",
+                    "mov",
+                    "avi",
+                    "mkv",
+                    "webm",
+                    "flv",
+                    "wmv",
+                    "mpeg",
+                    "3gp",
+                    "ogv",
+                    "m4v",
+                  ].map((format) => (
+                    <SelectItem key={format} value={format}>
+                      {format}
+                    </SelectItem>
+                  ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
-            <Button className="font-bold cursor-pointer" onClick={handleUpload}>
-              Upload
-            </Button>
+
+            {submitProgrees ? (
+              <Button disabled>
+                <Loader2 className="animate-spin" />
+                Processing
+              </Button>
+            ) : (
+              <Button
+                className="font-bold cursor-pointer"
+                onClick={handleUpload}
+              >
+                Upload
+              </Button>
+            )}
           </div>
         </div>
       </div>

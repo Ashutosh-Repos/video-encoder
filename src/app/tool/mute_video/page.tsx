@@ -1,7 +1,7 @@
-import React from "react";
+import WorkInProgress from "@/components/WorkInProgress";
 
-const page = () => {
-  return <div>Mute video</div>;
+const Page = () => {
+  return <WorkInProgress />;
 };
 
-export default page;
+export default Page;

@@ -1,8 +1,6 @@
 "use client";
-import React, { useEffect, useState, useMemo, Suspense } from "react";
+import React, { useState } from "react";
 import { MiniFileUpload } from "@/components/ui/file-upload";
-import { X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import HlsVideo from "hls-video-element/react";
 import MediaThemeSutro from "player.style/sutro/react";
@@ -11,19 +9,10 @@ import Link from "next/link";
 import { IconCheck, IconCopy } from "@tabler/icons-react";
 import { Button } from "./ui/button";
 
-interface uploadeProps {
-  name: string;
-  type: string;
-}
-
-const Uploader = ({ name, type }: uploadeProps) => {
-  const router = useRouter();
-  const [status, setStatus] = useState<any>();
-  const [err, setErr] = useState<any>();
+const Uploader = () => {
+  const [status, setStatus] = useState<string>("");
   const [isSent, setIsSent] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string>("");
-  const [isBtnDisabled, setBtnDisabled] = useState<boolean>(false);
-  const [waiting, setWaiting] = useState<boolean>(false);
   const [videoFileName, setVideoFileName] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
 
@@ -46,7 +35,6 @@ const Uploader = ({ name, type }: uploadeProps) => {
     const formData = new FormData();
     formData.append("file", file);
     setVideoFileName(file.name);
-    setBtnDisabled(true);
     try {
       const res = await fetch("/api/up", {
         method: "POST",
@@ -69,7 +57,6 @@ const Uploader = ({ name, type }: uploadeProps) => {
         const { done, value } = await reader.read();
         if (done) {
           console.log("Stream complete");
-          setBtnDisabled(false);
           return;
         }
         const text = decoder.decode(value, { stream: true });
@@ -84,13 +71,14 @@ const Uploader = ({ name, type }: uploadeProps) => {
         return readSSEStream();
       }
       await readSSEStream();
-    } catch (error: any) {
-      console.error("Upload or SSE failed:", error);
-      toast(
-        error?.message ||
-          "video upload server error or unable to read server response"
-      );
-      setBtnDisabled(true);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        const errorMessage = error.message || "Server error or SSE Read Error";
+        toast.warning(`Upload failed:${errorMessage}`);
+        console.error("Request failed:", errorMessage);
+      } else {
+        console.error("Unexpected error:", error);
+      }
       setIsSent(false);
     }
   };
@@ -131,12 +119,12 @@ const Uploader = ({ name, type }: uploadeProps) => {
         }
         setStatus(info.message);
       } else {
-        setErr(info?.err);
+        toast(info?.err);
         setStatus("");
       }
     } catch (error) {
       console.error("Error parsing SSE data:", error);
-      setErr("Failed to parse SSE message");
+      toast("Failed to parse SSE message");
     }
   };
 

@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { MiniFileUpload } from "@/components/ui/file-upload";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -14,22 +15,23 @@ import {
 } from "@/components/ui/select";
 
 const Page = () => {
-  // Manage selected file
+  const [submitProgrees, setSubmitProgrees] = useState<boolean>(false);
   const [file, setFile] = useState<File | null>(null);
-  // Manage selected compression quality; default to "medium"
   const [compressionQuality, setCompressionQuality] =
     useState<string>("medium");
 
-  const handleFileChange = (file: File) => {
-    setFile(file);
-    console.log("Selected file:", file);
+  const handleFileChange = (selectedFile: File): void => {
+    setFile(selectedFile);
+    console.log("Selected file:", selectedFile);
   };
 
-  const handleUpload = async () => {
+  const handleUpload = async (): Promise<void> => {
+    setSubmitProgrees(true);
     if (!file) {
       toast.warning("Please select or drop a video file");
       return;
     }
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("compressionQuality", compressionQuality);
@@ -39,14 +41,14 @@ const Page = () => {
         method: "POST",
         body: formData,
       });
-      // If the response is not ok, parse and show error.
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Error:", errorData.error);
         alert(`Error: ${errorData.error}`);
         return;
       }
-      // On success, download the returned blob as output.mp4.
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -56,10 +58,16 @@ const Page = () => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-    } catch (err: any) {
-      toast.warning("Upload failed");
-      console.error("Request failed:", err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Request failed:", err.message);
+        toast.warning("Upload failed");
+      } else {
+        console.error("Unexpected error:", err);
+      }
       alert("An unexpected error occurred.");
+    } finally {
+      setSubmitProgrees(false);
     }
   };
 
@@ -80,9 +88,7 @@ const Page = () => {
           <MiniFileUpload onChange={handleFileChange} />
           <div className="flex gap-4 items-center">
             <Select
-              onValueChange={(value) => {
-                setCompressionQuality(value);
-              }}
+              onValueChange={(value) => setCompressionQuality(value)}
               defaultValue="medium"
             >
               <SelectTrigger className="w-[180px]">
@@ -97,9 +103,20 @@ const Page = () => {
                 </SelectGroup>
               </SelectContent>
             </Select>
-            <Button className="font-bold cursor-pointer" onClick={handleUpload}>
-              Upload
-            </Button>
+
+            {submitProgrees ? (
+              <Button disabled>
+                <Loader2 className="animate-spin" />
+                Processing
+              </Button>
+            ) : (
+              <Button
+                className="font-bold cursor-pointer"
+                onClick={handleUpload}
+              >
+                Upload
+              </Button>
+            )}
           </div>
         </div>
       </div>

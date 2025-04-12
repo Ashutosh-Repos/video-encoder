@@ -1,16 +1,13 @@
 import React from "react";
 import { WobbleCard } from "./ui/wobble-card";
 import {
-  IconCrop,
   IconCast,
   IconArrowsMinimize,
   IconTransform,
-  IconBadgeCc,
   IconMusic,
 } from "@tabler/icons-react";
-import { Scaling, Captions, Music } from "lucide-react";
+import { Scaling, Captions } from "lucide-react";
 import Link from "next/link";
-import { color } from "framer-motion";
 import { cn } from "@/lib/utils";
 const Tools = () => {
   const tools_meta = [

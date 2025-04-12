@@ -12,13 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 
 const Page = () => {
-  // Manage selected file
   const [files, setFiles] = useState<File | null>(null);
-  // When true, custom aspect ratio input is shown
+  const [submitProgrees, setSubmitProgrees] = useState<boolean>(false);
   const [showCustomInputs, setShowCustomInputs] = useState<boolean>(false);
-  // Aspect ratio factors as strings (e.g., "16", "9")
+
   const [w_factor, setwFactor] = useState<string>("");
   const [h_factor, sethFactor] = useState<string>("");
 
@@ -28,11 +28,12 @@ const Page = () => {
   };
 
   const handleUpload = async () => {
+    setSubmitProgrees(true);
     if (!files) {
       toast.warning("Please select or drop a video file");
       return;
     }
-    // Validate that both factors are present.
+
     if (!w_factor || !h_factor) {
       toast.warning("Please select or enter a valid aspect ratio");
       return;
@@ -48,7 +49,6 @@ const Page = () => {
         body: formData,
       });
 
-      // If the response is not ok, parse and show error.
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Error:", errorData.error);
@@ -56,7 +56,6 @@ const Page = () => {
         return;
       }
 
-      // On success, download the returned blob as output.mp4.
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -66,10 +65,15 @@ const Page = () => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-    } catch (err: any) {
-      toast.warning("Upload failed");
-      console.error("Request failed:", err.message);
-      alert("An unexpected error occurred.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.warning("Upload failed");
+        console.error("Request failed:", err.message);
+      } else {
+        console.error("Unexpected error:", err);
+      }
+    } finally {
+      setSubmitProgrees(false);
     }
   };
 
@@ -94,12 +98,10 @@ const Page = () => {
                 onValueChange={(value) => {
                   if (value === "custom") {
                     setShowCustomInputs(true);
-                    // Clear existing values so the user can enter new numbers.
                     setwFactor("");
                     sethFactor("");
                   } else {
                     setShowCustomInputs(false);
-                    // Expecting a value like "16:9" so we split by colon.
                     const [w, h] = value.split(":");
                     setwFactor(w);
                     sethFactor(h);
@@ -120,7 +122,6 @@ const Page = () => {
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              {/* Only show custom inputs if "Custom" is selected */}
               {showCustomInputs && (
                 <div className="flex items-center gap-2">
                   <input
@@ -142,9 +143,19 @@ const Page = () => {
               )}
             </div>
 
-            <Button className="font-bold cursor-pointer" onClick={handleUpload}>
-              Upload
-            </Button>
+            {submitProgrees ? (
+              <Button disabled>
+                <Loader2 className="animate-spin" />
+                Processing
+              </Button>
+            ) : (
+              <Button
+                className="font-bold cursor-pointer"
+                onClick={handleUpload}
+              >
+                Upload
+              </Button>
+            )}
           </div>
         </div>
       </div>

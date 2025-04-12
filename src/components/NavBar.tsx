@@ -6,12 +6,10 @@ import {
   NavItems,
   MobileNav,
   NavbarLogo,
-  NavbarButton,
   MobileNavHeader,
   MobileNavToggle,
   MobileNavMenu,
 } from "./ui/resizable-navbar";
-import { ModeToggle } from "./ModeToggle";
 
 const NavBar = () => {
   const navItems = [

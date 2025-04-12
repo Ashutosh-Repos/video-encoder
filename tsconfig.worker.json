@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "worker-dist",
+    "target": "ES2020",
+    "module": "CommonJS",
+    "isolatedModules": false,
+    "moduleResolution": "node",
+    "allowJs": false,
+    "checkJs": false,
+    "declaration": false,
+    "lib": ["esnext"] // Remove "dom" since workers don’t use DOM
+  },
+  "include": ["src/app/worker/**/*.ts"]
+}

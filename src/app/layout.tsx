@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import NavBar from "@/components/NavBar";
 import { WavyBackground } from "@/components/ui/wavy-background";
-import DotBg from "@/components/DotBg";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

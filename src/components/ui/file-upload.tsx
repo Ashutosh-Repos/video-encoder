@@ -28,19 +28,16 @@ const secondaryVariant = {
 export const MiniFileUpload = ({
   onChange,
 }: {
-  onChange?: (file: File) => void;
+  onChange: (file: File) => void;
 }) => {
-  const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null); // Single file state
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (newFiles: File[]) => {
     if (newFiles.length > 0) {
       const newFile = newFiles[0];
-      const previewUrl = URL.createObjectURL(newFile);
       setFile(newFile); // Replace the existing file
-      onChange && onChange(newFile); // Notify parent of the new file
-      setPreview(previewUrl);
+      onChange(newFile); // Notify parent of the new file
     }
   };
 
