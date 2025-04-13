@@ -80,8 +80,10 @@ const runFFmpegWorker = (
 export async function POST(req: Request): Promise<Response> {
   const folderUUID = randomUUID();
   const date = new Date().toISOString().replace(/[:.-]/g, "");
-  const uploadDir = path.join("temp", "final", `${folderUUID}_${date}`);
+  const uploadDir = path.join("/tmp", `${folderUUID}_${date}`, "out");
+  const inputDir = path.join("/tmp", `${folderUUID}_${date}`, "in");
   await fs.mkdir(uploadDir, { recursive: true });
+  await fs.mkdir(inputDir);
 
   let inputFilePath: string | null = null;
   console.log("hello");
@@ -104,7 +106,7 @@ export async function POST(req: Request): Promise<Response> {
       path.extname(file.name)
     )}-${randomUUID()}${path.extname(file.name)}`;
 
-    inputFilePath = path.join("temp", "uploads", uniqueFilename);
+    inputFilePath = path.join(inputDir, uniqueFilename);
     const arrayBuffer = await file.arrayBuffer();
     await fs.writeFile(inputFilePath, Buffer.from(arrayBuffer));
 
@@ -148,20 +150,15 @@ export async function POST(req: Request): Promise<Response> {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   } finally {
-    if (inputFilePath) {
-      try {
-        await fs.rm(inputFilePath, { force: true });
-        console.log(`Deleted input file: ${inputFilePath}`);
-      } catch (err) {
-        console.error("Error deleting input file:", err);
-      }
-    }
-
-    try {
-      await fs.rm(uploadDir, { recursive: true, force: true });
-      console.log(`Cleaned up directory: ${uploadDir}`);
-    } catch (err) {
-      console.error("Error cleaning up upload directory:", err);
-    }
+    await Promise.all([
+      fs.rm(uploadDir, { recursive: true, force: true }).catch(console.error),
+      fs.rm(inputDir, { recursive: true, force: true }).catch(console.error),
+    ]);
+    await fs
+      .rm(path.join("/tmp", `${folderUUID}_${date}`), {
+        recursive: true,
+        force: true,
+      })
+      .catch(console.error);
   }
 }

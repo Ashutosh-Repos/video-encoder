@@ -175,7 +175,10 @@ export async function POST(req: Request): Promise<Response> {
 
       const folderUUID = randomUUID();
       const date = new Date().toISOString().replace(/[:.-]/g, "");
-      const uploadDir = path.join("temp/final", `${folderUUID}_${date}`);
+      const uploadDir = path.join("/tmp", `${folderUUID}_${date}`, "out");
+      const inputDir = path.join("/tmp", `${folderUUID}_${date}`, "in");
+      await fs.mkdir(uploadDir, { recursive: true });
+      await fs.mkdir(inputDir);
       const evtid = { id: 1 }; // Use a mutable object to track the event id
 
       let inputFilePath: string | null = null;
@@ -194,7 +197,7 @@ export async function POST(req: Request): Promise<Response> {
           file.name,
           path.extname(file.name)
         )}-${randomUUID()}${path.extname(file.name)}`;
-        inputFilePath = path.join("temp/uploads", uniqueFilename);
+        inputFilePath = path.join(inputDir, uniqueFilename);
         const arrayBuffer = await file.arrayBuffer();
         await fs.writeFile(inputFilePath, Buffer.from(arrayBuffer));
 
@@ -284,13 +287,20 @@ export async function POST(req: Request): Promise<Response> {
         console.error("Error:", (error as Error).message);
         sendStatus(-1, "Error", { error: (error as Error).message });
       } finally {
-        // Clean up
-        if (inputFilePath) {
-          await fs.rm(inputFilePath, { force: true });
-          console.log(`Deleted input file: ${inputFilePath}`);
-        }
-        await fs.rm(uploadDir, { recursive: true, force: true });
-        console.log(`Cleaned up directory: ${uploadDir}`);
+        await Promise.all([
+          fs
+            .rm(uploadDir, { recursive: true, force: true })
+            .catch(console.error),
+          fs
+            .rm(inputDir, { recursive: true, force: true })
+            .catch(console.error),
+        ]);
+        await fs
+          .rm(path.join("/tmp", `${folderUUID}_${date}`), {
+            recursive: true,
+            force: true,
+          })
+          .catch(console.error);
         controller.close();
       }
     },

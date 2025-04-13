@@ -91,8 +91,10 @@ const sanitizeFilename = (name: string): string => {
 export async function POST(req: Request): Promise<Response> {
   const folderUUID = randomUUID();
   const date = new Date().toISOString().replace(/[:.-]/g, "");
-  const uploadDir = path.join("temp", "final", `${folderUUID}_${date}`);
+  const uploadDir = path.join("/tmp", `${folderUUID}_${date}`, "out");
+  const inputDir = path.join("/tmp", `${folderUUID}_${date}`, "in");
   await fs.mkdir(uploadDir, { recursive: true });
+  await fs.mkdir(inputDir);
 
   let inputFilePath: string | null = null;
   let subtitlePath: string | null = null;
@@ -109,7 +111,7 @@ export async function POST(req: Request): Promise<Response> {
     const uniqueFilename = `${sanitizeFilename(
       path.basename(file.name, path.extname(file.name))
     )}-${randomUUID()}${path.extname(file.name)}`;
-    inputFilePath = path.join("temp", "uploads", uniqueFilename);
+    inputFilePath = path.join(inputDir, uniqueFilename);
     await fs.writeFile(inputFilePath, Buffer.from(await file.arrayBuffer()));
 
     if (!(subtitle instanceof File)) {
@@ -119,7 +121,7 @@ export async function POST(req: Request): Promise<Response> {
     const subtitleFilename = `sub-${sanitizeFilename(
       path.basename(subtitle.name, path.extname(subtitle.name))
     )}-${randomUUID()}${path.extname(subtitle.name)}`;
-    subtitlePath = path.join("temp", "uploads", subtitleFilename);
+    subtitlePath = path.join(inputDir, subtitleFilename);
     await fs.writeFile(subtitlePath, Buffer.from(await subtitle.arrayBuffer()));
 
     const { width, height } = await getVideoResolution(inputFilePath);
@@ -145,16 +147,15 @@ export async function POST(req: Request): Promise<Response> {
       error instanceof Error ? error.message : "Unknown server error";
     return NextResponse.json({ error: message }, { status: 500 });
   } finally {
-    const cleanup = async (targetPath: string | null) => {
-      if (targetPath) {
-        await fs.rm(targetPath, { force: true }).catch(console.error);
-      }
-    };
-
     await Promise.all([
-      cleanup(inputFilePath),
-      cleanup(subtitlePath),
       fs.rm(uploadDir, { recursive: true, force: true }).catch(console.error),
+      fs.rm(inputDir, { recursive: true, force: true }).catch(console.error),
     ]);
+    await fs
+      .rm(path.join("/tmp", `${folderUUID}_${date}`), {
+        recursive: true,
+        force: true,
+      })
+      .catch(console.error);
   }
 }
