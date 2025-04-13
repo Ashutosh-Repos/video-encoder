@@ -63,6 +63,7 @@ const Page = () => {
         console.error("Request failed:", err.message);
         toast.warning("Upload failed");
       } else {
+        alert(err);
         console.error("Unexpected error:", err);
       }
       alert("An unexpected error occurred.");
