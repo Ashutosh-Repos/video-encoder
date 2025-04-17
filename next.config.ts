@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   images: {
     domains: ["res.cloudinary.com", "assets.aceternity.com"],
   },
+  output: "standalone",
   // experimental: {
   //   serverActions: {
   //     bodySizeLimit: "100000mb", // Only needed if using Server Actions
