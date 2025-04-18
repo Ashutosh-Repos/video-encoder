@@ -1,3 +1,4 @@
 [build]
-  command = "sudo apt-get update && sudo apt-get install -y ffmpeg && npm run build"
+  command = "npm run build && (which sudo && sudo apt-get update -y --verbose-versions && sudo apt-get install -y ffmpeg) || { echo 'apt-get command failed'; exit 1; }"
   publish = ".next"
+  environment = { NETLIFY_BUILD_BASE = "ubuntu-20.04" }
