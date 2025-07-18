@@ -135,7 +135,7 @@ export async function POST(req: Request): Promise<Response> {
 
     const fileBuffer = await fs.readFile(processedFilePath);
 
-    return new Response(fileBuffer, {
+    return new Response(new Uint8Array(fileBuffer), {
       headers: {
         "Content-Type": "video/mp4",
         "Content-Disposition": 'attachment; filename="output.mp4"',
