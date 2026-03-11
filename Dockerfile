@@ -33,9 +33,10 @@ RUN \
   elif [ -f package-lock.json ]; then npm run build; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
   else echo "Lockfile not found." && exit 1; \
-  fi && \
-  echo "Listing worker-dist contents:" && ls -la /app/worker-dist && \
-  echo "Listing node_modules/chokidar contents:" && ls -la /app/node_modules/chokidar || echo "Chokidar not found"
+  fi
+
+RUN echo "Listing worker-dist contents:" && ls -la /app/worker-dist
+RUN echo "Listing node_modules/chokidar contents:" && (ls -la /app/node_modules/chokidar || echo "Chokidar not found")
 
 # Production image, copy all the files and run next
 FROM base AS runner

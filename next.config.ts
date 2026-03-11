@@ -15,15 +15,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    // This prevents Turbopack/Webpack from trying to bundle native Node modules
-    serverComponentsExternalPackages: [
-      "worker_threads",
-      "ffmpeg",
-      "workerpool",
-      "chokidar", // Add this
-    ],
-  },
+  serverExternalPackages: [
+    "worker_threads",
+    "ffmpeg",
+    "workerpool",
+    "chokidar",
+  ],
 };
 
 export default nextConfig;
