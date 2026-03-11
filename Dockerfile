@@ -52,7 +52,11 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
+# 2. Create the .next directory and set permissions
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
 # Copy Next.js standalone output
+# 3. Copy standalone output (this includes a minimal node_modules)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Explicitly copy worker-dist and full node_modules for worker dependencies
