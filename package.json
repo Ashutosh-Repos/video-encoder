@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "tsc -p tsconfig.worker.json && next build",
+    "build": "tsc -p tsconfig.worker.json && next build --no-turbo",
     "start": "next start",
     "lint": "next lint",
     "build:worker": "tsc -p tsconfig.worker.json",
-    "build:all": "npm run build:worker && npm run build"
+    "build:all": "npm run build:worker && npm run build --no-turbo"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

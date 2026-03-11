@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
       "worker_threads",
       "ffmpeg",
       "workerpool",
+      "chokidar", // Add this
     ],
   },
 };
